@@ -6,10 +6,11 @@ import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { Link } from "react-router-dom";
 import Comments from "../comments/Comments";
+import { useState } from "react";
 import moment from "moment";
-import { useQuery, useMutation, useQueryClient } from "react-query";
+import { useQuery, useQueryClient, useMutation } from "react-query";
 import { makeReqest } from "../../axios";
-import { useState, useContext } from "react";
+import { useContext } from "react";
 import { AuthContext } from "../../context/authContext";
 
 const Post = ({ post }) => {
@@ -38,9 +39,24 @@ const Post = ({ post }) => {
          },
       }
    );
+   const deleteMutation = useMutation(
+      (postId) => {
+         return makeReqest.delete("/posts/" + postId);
+      },
+      {
+         onSuccess: () => {
+            // Invalidate and refetch
+            queryClient.invalidateQueries(["posts"]);
+         },
+      }
+   );
 
    const handleLike = () => {
       mutation.mutate(data.includes(currentUser.id));
+   };
+
+   const handleDelete = () => {
+      deleteMutation.mutate(post.id);
    };
 
    return (
@@ -48,7 +64,7 @@ const Post = ({ post }) => {
          <div className="container">
             <div className="user">
                <div className="userInfo">
-                  <img src={post.profilePic} alt="" />
+                  <img src={"/upload/" + post.profilePic} alt="" />
                   <div className="details">
                      <Link
                         to={`/profile/${post.userId}`}
@@ -61,11 +77,14 @@ const Post = ({ post }) => {
                      </span>
                   </div>
                </div>
-               <MoreHorizIcon />
+               <MoreHorizIcon onClick={() => setMenuOpen(!menuOpen)} />
+               {menuOpen && post.userId === currentUser.id && (
+                  <button onClick={handleDelete}>delete</button>
+               )}
             </div>
             <div className="content">
                <p>{post.descr}</p>
-               <img src={"./upload/" + post.img} alt="" />
+               <img src={"/upload/" + post.img} alt="" />
             </div>
             <div className="info">
                <div className="item">

@@ -1,11 +1,11 @@
-import { makeReqest } from "../../axios";
 import Post from "../post/Post";
 import "./posts.scss";
 import { useQuery } from "react-query";
+import { makeReqest } from "../../axios";
 
-const Posts = () => {
-   const { isLoading, error, data } = useQuery("posts", () =>
-      makeReqest.get("/posts").then((res) => {
+const Posts = ({ userId }) => {
+   const { isLoading, error, data } = useQuery(["posts"], () =>
+      makeReqest.get("/posts?userId=" + userId).then((res) => {
          return res.data;
       })
    );
