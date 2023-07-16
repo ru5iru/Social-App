@@ -2,48 +2,99 @@ import "./share.scss";
 import Image from "../../assets/img.png";
 import Map from "../../assets/map.png";
 import Friend from "../../assets/friend.png";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { AuthContext } from "../../context/authContext";
+import { useMutation, useQueryClient } from "react-query";
+import { makeReqest } from "../../axios";
 
 const Share = () => {
+   const [file, setFile] = useState(null);
+   const [descr, setDescr] = useState("");
 
-  const {currentUser} = useContext(AuthContext)
-  return (
-    <div className="share">
-      <div className="container">
-        <div className="top">
-          <img
-            src={currentUser.profilePic}
-            alt=""
-          />
-          <input type="text" placeholder={`What's on your mind ${currentUser.name}?`} />
-        </div>
-        <hr />
-        <div className="bottom">
-          <div className="left">
-            <input type="file" id="file" style={{display:"none"}} />
-            <label htmlFor="file">
-              <div className="item">
-                <img src={Image} alt="" />
-                <span>Add Image</span>
-              </div>
-            </label>
-            <div className="item">
-              <img src={Map} alt="" />
-              <span>Add Place</span>
+   const upload = async () => {
+      try {
+         const formData = new FormData();
+         formData.append("file", file);
+         const res = await makeReqest.post("/upload", formData);
+         return res.data;
+      } catch (err) {
+         console.log(err);
+      }
+   };
+
+   const { currentUser } = useContext(AuthContext);
+
+   const queryClient = useQueryClient();
+
+   const mutation = useMutation(
+      (newPost) => {
+         return makeReqest.post("/posts", newPost);
+      },
+      {
+         onSuccess: () => {
+            // Invalidate and refetch
+            queryClient.invalidateQueries(["posts"]);
+         },
+      }
+   );
+
+   const handleClick = async (e) => {
+      e.preventDefault();
+      let imgUrl = "";
+      if (file) imgUrl = await upload();
+      mutation.mutate({ descr, img: imgUrl });
+      setDescr("")
+      setFile(null)
+   };
+
+   return (
+      <div className="share">
+         <div className="container">
+            <div className="top">
+               <div className="left">
+               <img src={currentUser.profilePic} alt="" />
+               <input
+                  type="text"
+                  placeholder={`What's on your mind ${currentUser.name}?`}
+                  onChange={(e) => setDescr(e.target.value)}
+                  value={descr}
+               />
+               </div>
+               <div className="right">
+                  {file && <img className="file" alt="" src={URL.createObjectURL(file)}/>}
+               </div>
             </div>
-            <div className="item">
-              <img src={Friend} alt="" />
-              <span>Tag Friends</span>
+            <hr />
+            <div className="bottom">
+               <div className="left">
+                  <input
+                     type="file"
+                     id="file"
+                     style={{ display: "none" }}
+                     onChange={(e) => setFile(e.target.files[0])}
+                  />
+                  <label htmlFor="file">
+                     <div className="item">
+                        <img src={Image} alt="" />
+                        <span>Add Image</span>
+                     </div>
+                  </label>
+                  <div className="item">
+                     <img src={Map} alt="" />
+                     <span>Add Place</span>
+                  </div>
+                  <div className="item">
+                     <img src={Friend} alt="" />
+                     <span>Tag Friends</span>
+                  </div>
+               </div>
+               <div className="right">
+                  <button onClick={handleClick}>Share</button>
+               </div>
             </div>
-          </div>
-          <div className="right">
-            <button>Share</button>
-          </div>
-        </div>
+         </div>
       </div>
-    </div>
-  );
+   );
 };
 
 export default Share;
